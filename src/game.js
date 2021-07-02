@@ -7,7 +7,7 @@ export class Game {
     this.initialize();
   }
   initialize() {
-    this.clock = new THREE.Clock();
+    
     //sets up scene
     this.scene = new THREE.Scene();
     //sets up basic camera
@@ -30,8 +30,8 @@ export class Game {
     //Creates basic box to test collision detection with rays
     this.geometry = new THREE.BoxGeometry();
     this.meshes = [];
-    for (let i = 0; i < 20000; i++) {
-      let material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    for (let i = 0; i < 100; i++) {
+      let material = new THREE.MeshLambertMaterial({ color: 0xff0000 });
       let mesh = new THREE.Mesh(this.geometry, material);
       mesh.position.set(Math.cos(i / 4) * 2 + Math.sin(i / 15) * 5, -2, -i);
       if (i < 100) {
@@ -44,6 +44,16 @@ export class Game {
       this.scene.add(mesh);
       this.meshes.push(mesh);
     }
+
+
+    //light
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    this.scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    directionalLight.position.set(10,20,0);
+    this.scene.add(directionalLight);
+
     //used for the rgb effect
     this.counter = 0;
 
@@ -52,15 +62,24 @@ export class Game {
 
     this.ball.setVelocity(undefined, undefined, -0.2);
 
+    this.delta = 0;
+   // this.clock = new THREE.Clock();
     this.render();
   }
   render() {
     requestAnimationFrame(() => {
+      
+      if(this.clock == undefined){
+        this.clock = new THREE.Clock();
+      }
+      else{
+      
+        this.delta = this.clock.getDelta() / 9.81 ;
+      }
       //let delta = 1;
-      let delta = this.clock.getDelta() / 9.81;
 
-      if (this.ball.mesh.position.z < this.meshes[this.meshes.length - 1].position.z + 200) {
-        let material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+      while(this.ball.mesh.position.z < this.meshes[this.meshes.length - 1].position.z + 200) {
+        let material = new THREE.MeshLambertMaterial({ color: 0xff0000 });
         let mesh = new THREE.Mesh(this.geometry, material);
         let i = -this.meshes[this.meshes.length - 1].position.z + 1;
         mesh.position.set(Math.cos(i / 4) * 2 + Math.sin(i / 15) * 5, -2, -i);
@@ -70,7 +89,7 @@ export class Game {
         this.scene.add(this.meshes[this.meshes.length - 1]);
       }
 
-      this.counter += delta;
+      this.counter += this.delta;
       // for (let i = 0; i < this.meshes.length; i++) {
       //  let i1 = -this.meshes[i].position.z;
       //  this.meshes[i].material.color.setHSL((i1 + this.counter * 200) / 100, 0.5, 0.5);
@@ -87,9 +106,9 @@ export class Game {
       let right = 0;
       if (this.controlhandler.isKeyPressed(65)) left = -5;
       if (this.controlhandler.isKeyPressed(68)) right = 5;
-      this.ball.controlHorizontally(left + right, delta);
-      this.ball.controlVertically(-0.15, delta);
-      this.ball.moveDown(delta);
+      this.ball.controlHorizontally(left + right, this.delta);
+      this.ball.controlVertically(-0.15, this.delta);
+      this.ball.moveDown(this.delta);
 
       if (this.ball.mesh.y < -100) {
         this.initialize();

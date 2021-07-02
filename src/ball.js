@@ -50,14 +50,14 @@ export class Ball {
       );
       if (intersect[0] != undefined) {
         if (intersect[0].distance < 1) {
-          if (this.raycast[i].x) {
+          if (this.raycast[i].x ) {
             this.setVelocity(0, undefined, undefined);
           }
           if (this.raycast[i].y) {
-            this.setVelocity(undefined, 0.1, undefined);
-            //this.setPosition(undefined, -0.5, undefined);
-            //this.applyPosition(deltaTime);
-            // return;
+            this.setVelocity(undefined, 0, undefined);
+            this.setPosition(undefined, -0.5, undefined);
+            this.applyPosition(deltaTime);
+            return;
           }
           if (this.raycast[i].z) {
             this.setVelocity(undefined, undefined, undefined);
@@ -66,7 +66,8 @@ export class Ball {
       }
     }
 
-    if (this.velocity.y < 100) {
+    if (this.velocity.y < 100  ) {
+      
       this.addVelocity(0, -3, 0, deltaTime);
     }
     this.applyPosition(deltaTime);
@@ -106,6 +107,7 @@ export class Ball {
       newX += deltaTime;
     }
     let newY = this.velocity.y;
+    /*
     if (newY > -0.0001 && newY < 0.0001) {
       newY = 0;
     }
@@ -114,6 +116,7 @@ export class Ball {
     } else if (newY < 0) {
       newY += deltaTime;
     }
+    */
     let newZ = this.velocity.z;
     if (newZ > -0.0001 && newZ < 0.0001) {
       newZ = 0;
@@ -124,7 +127,12 @@ export class Ball {
       newZ += deltaTime;
     }
     this.velocity.set(newX, newY, newZ);
-    this.position.set(this.position.x + this.velocity.x * deltaTime * 10000, this.position.y + this.velocity.y * deltaTime * 10000, this.position.z + this.velocity.z * deltaTime * 10000);
+    //this.position.set(this.position.x + this.velocity.x , this.position.y + this.velocity.y , this.position.z + this.velocity.z );
+    let tempX = this.position.x + this.velocity.x * deltaTime * 10000;
+    let tempY = this.position.y + this.velocity.y * deltaTime * 10000;
+    let tempZ = this.position.z + this.velocity.z * deltaTime * 10000;
+    this.position.set(tempX, tempY, tempZ);
+    this.mesh.visible = true;
     this.mesh.position.set(this.position.x, this.position.y, this.position.z);
   }
   update() {}
