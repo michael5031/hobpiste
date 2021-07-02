@@ -1,4 +1,4 @@
-import * as THREE from "../three/build/three.module.js";
+import * as THREE from "three";
 
 export class Ball {
   constructor() {
@@ -9,7 +9,7 @@ export class Ball {
     this.velocity = new THREE.Vector3(0, 0, 0);
 
     this.geometry = new THREE.SphereGeometry(1, 32, 32);
-    this.material = new THREE.MeshBasicMaterial({ color: 0xff00ff });
+    this.material = new THREE.MeshBasicMaterial({ color: 0xffffff });
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.mesh.name = "Ball";
     this.applyPosition();
@@ -52,26 +52,19 @@ export class Ball {
         if (intersect[0].distance < 1) {
           if (this.raycast[i].x) {
             this.setVelocity(0, undefined, undefined);
-            this.applyPosition(deltaTime);
           }
           if (this.raycast[i].y) {
             this.setVelocity(undefined, 0.1, undefined);
-            this.applyPosition(deltaTime);
+            //this.setPosition(undefined, -0.5, undefined);
+            //this.applyPosition(deltaTime);
+            // return;
           }
           if (this.raycast[i].z) {
             this.setVelocity(undefined, undefined, undefined);
-            this.applyPosition(deltaTime);
           }
         }
       }
     }
-    // if (intersects[0] != undefined) {
-    //   if (intersects[0].distance < 1) {
-    //     this.material.color.setHex(0xffffff);
-    //     this.applyPosition(deltaTime);
-    //     return;
-    //   }
-    // }
 
     if (this.velocity.y < 100) {
       this.addVelocity(0, -3, 0, deltaTime);
@@ -90,8 +83,19 @@ export class Ball {
     let z = z1 == undefined ? this.velocity.z : z1;
     this.velocity.set(x, y, z);
   }
+  setPosition(x1, y1, z1) {
+    let x = x1 == undefined ? this.position.x : x1;
+    let y = y1 == undefined ? this.position.y : y1;
+    let z = z1 == undefined ? this.position.z : z1;
+    this.position.set(x, y, z);
+  }
   applyPosition(deltaTime1) {
-    let deltaTime = deltaTime1 * 0.1;
+    let deltaTime;
+    if (deltaTime1 != undefined) {
+      deltaTime = deltaTime1 * 0.1;
+    } else {
+      deltaTime = 0;
+    }
     let newX = this.velocity.x;
     if (newX > -0.0001 && newX < 0.0001) {
       newX = 0;
@@ -120,7 +124,7 @@ export class Ball {
       newZ += deltaTime;
     }
     this.velocity.set(newX, newY, newZ);
-    this.position.set(this.position.x + this.velocity.x, this.position.y + this.velocity.y, this.position.z + this.velocity.z);
+    this.position.set(this.position.x + this.velocity.x * deltaTime * 10000, this.position.y + this.velocity.y * deltaTime * 10000, this.position.z + this.velocity.z * deltaTime * 10000);
     this.mesh.position.set(this.position.x, this.position.y, this.position.z);
   }
   update() {}

@@ -1,5 +1,5 @@
-import * as THREE from "../three/build/three.module.js";
-import { OrbitControls } from "../three/examples/jsm/controls/OrbitControls.js";
+import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { Ball } from "./ball.js";
 import { Controlhandler } from "./controlhandler.js";
 export class Game {
@@ -29,27 +29,52 @@ export class Game {
 
     //Creates basic box to test collision detection with rays
     this.geometry = new THREE.BoxGeometry();
-    for (let i = 0; i < 1000; i++) {
+    this.meshes = [];
+    for (let i = 0; i < 20000; i++) {
       let material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
       let mesh = new THREE.Mesh(this.geometry, material);
       mesh.position.set(Math.cos(i / 4) * 2 + Math.sin(i / 15) * 5, -2, -i);
       if (i < 100) {
         mesh.position.x *= i / 100;
       }
-      mesh.material.color = new THREE.Color(Math.random(), Math.random(), Math.random());
-      mesh.scale.set(4, 1, 1);
+      //mesh.material.color = new THREE.Color(Math.cos(i / 20), Math.sin(i / 20), Math.cos(i / 20) * Math.sin(i / 20));
+      mesh.material.color.setHSL(i / 50, 0.5, 0.5);
+      mesh.scale.set(5, 1, 1);
+
       this.scene.add(mesh);
+      this.meshes.push(mesh);
     }
+    //used for the rgb effect
+    this.counter = 0;
 
     //creates a controlhandler which checks if a specific button is pressed
     this.controlhandler = new Controlhandler();
 
     this.ball.setVelocity(undefined, undefined, -0.2);
+
     this.render();
   }
   render() {
     requestAnimationFrame(() => {
+      //let delta = 1;
       let delta = this.clock.getDelta() / 9.81;
+
+      if (this.ball.mesh.position.z < this.meshes[this.meshes.length - 1].position.z + 200) {
+        let material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        let mesh = new THREE.Mesh(this.geometry, material);
+        let i = -this.meshes[this.meshes.length - 1].position.z + 1;
+        mesh.position.set(Math.cos(i / 4) * 2 + Math.sin(i / 15) * 5, -2, -i);
+        mesh.material.color.setHSL(i / 50, 0.5, 0.5);
+        mesh.scale.set(5, 1, 1);
+        this.meshes.push(mesh);
+        this.scene.add(this.meshes[this.meshes.length - 1]);
+      }
+
+      this.counter += delta;
+      // for (let i = 0; i < this.meshes.length; i++) {
+      //  let i1 = -this.meshes[i].position.z;
+      //  this.meshes[i].material.color.setHSL((i1 + this.counter * 200) / 100, 0.5, 0.5);
+      // }
 
       this.camera.position.set(0, 5, this.ball.mesh.position.z + 9);
       this.controls.target = this.ball.mesh.position;
@@ -65,6 +90,11 @@ export class Game {
       this.ball.controlHorizontally(left + right, delta);
       this.ball.controlVertically(-0.15, delta);
       this.ball.moveDown(delta);
+
+      if (this.ball.mesh.y < -100) {
+        this.initialize();
+      }
+
       this.renderer.render(this.scene, this.camera);
       this.render();
     });

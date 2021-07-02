@@ -10,5 +10,8 @@
   "license": "ISC",
   "browserslist": [
     "last 1 Chrome version"
-  ]
+  ],
+  "dependencies": {
+    "three": "^0.130.0"
+  }
 }
