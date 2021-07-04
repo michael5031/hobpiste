@@ -20,6 +20,7 @@ export class Ball {
     //let shape = new CANNON.Box(new CANNON.Vec3(1 / 2, 1 / 2, 1 / 2));
     let mass = 5;
     this.cMesh = new CANNON.Body({ mass, shape });
+    this.cMesh.fixedRotation = true;
   }
   addToScene(scene) {
     this.scene = scene;

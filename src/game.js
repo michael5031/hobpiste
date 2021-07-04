@@ -16,6 +16,11 @@ export class Game {
     this.cScene.broadphase = new CANNON.NaiveBroadphase();
     this.cScene.solver.iterations = 40;
 
+    this.cScene.defaultContactMaterial.contactEquationStiffness = 10000000;
+    //this.cScene.defaultContactMaterial.contactEquationRelaxation = 1000;
+    this.cScene.defaultContactMaterial.restitution = 0;
+    this.cScene.defaultContactMaterial.friction = 0;
+
     //sets up basic camera
     this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
 
@@ -74,10 +79,11 @@ export class Game {
       }
 
       if (this.worldGenerationClock.getElapsedTime() > 0.2) {
-        this.worldgeneration.generateAroundPosition(new THREE.Vector3(0, 0, this.ball.mesh.position.z), 100);
+        this.worldgeneration.generateAroundPosition(new THREE.Vector3(0, 0, this.ball.mesh.position.z), 300);
         this.worldgeneration.deleteBehind(new THREE.Vector3(0, 0, this.ball.mesh.position.z + 40));
         this.worldGenerationClock.start();
       }
+      this.worldgeneration.updatePhysics(new THREE.Vector3(0, 0, this.ball.mesh.position.z));
       //this.ball.cMesh.applyForce(new CANNON.Vec3(0, 0, this.delta * -5022), new CANNON.Vec3(0, 0, 0));
       //let oldVel = this.ball.cMesh.velocity;
       //this.ball.cMesh.velocity.set(oldVel.x, oldVel.y, -40);
@@ -99,14 +105,13 @@ export class Game {
       }
       this.ball.cMesh.velocity.set(oldVel.x + left + right, oldVel.y, newZ);
 
-      this.worldgeneration.updatePhysics(new THREE.Vector3(0, 0, this.ball.mesh.position.z));
       if (this.physicsClock == undefined) {
         this.physicsClock = new THREE.Clock();
       } else {
         this.updatePhysics(this.physicsClock.getDelta());
       }
-      this.camera.position.set(0, 5, this.ball.mesh.position.z + 9);
-      this.controls.target = this.ball.mesh.position;
+      this.camera.position.set(this.ball.mesh.position.x / 5, 3, this.ball.mesh.position.z + 9);
+      this.controls.target = new THREE.Vector3(this.ball.mesh.position.x, 0, this.ball.mesh.position.z);
       this.controls.update();
       this.renderer.render(this.scene, this.camera);
       this.render();
