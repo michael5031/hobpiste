@@ -2,8 +2,10 @@
   "name": "hobbypiste-1",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
+    "start": "parcel src/index.html",
+    "build": "rm -rf .dist && rm -rf .parcel-cache && parcel build src/index.html --public-url ./ --no-scope-hoist",
+    "deploy": "gh-pages -d dist",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -13,6 +15,7 @@
   ],
   "dependencies": {
     "cannon": "^0.6.2",
+    "gh-pages": "^3.2.3",
     "physijs": "^1.0.4",
     "three": "^0.130.0"
   }
