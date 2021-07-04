@@ -1,15 +1,21 @@
 import * as THREE from "three";
+import * as CANNON from "cannon";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { Ball } from "./ball.js";
 import { Controlhandler } from "./controlhandler.js";
+import { Worldgeneration, StraightCurvy } from "./worldgeneration.js";
 export class Game {
   constructor() {
     this.initialize();
   }
   initialize() {
-    
     //sets up scene
     this.scene = new THREE.Scene();
+    this.cScene = new CANNON.World();
+    this.cScene.gravity.set(0, -10, 0);
+    this.cScene.broadphase = new CANNON.NaiveBroadphase();
+    this.cScene.solver.iterations = 40;
+
     //sets up basic camera
     this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
 
@@ -24,34 +30,21 @@ export class Game {
     this.controls.update();
 
     //Creates the main controllable ball
-    this.ball = new Ball();
+    this.ball = new Ball(this.scene, this.cScene);
     this.ball.addToScene(this.scene);
 
     //Creates basic box to test collision detection with rays
     this.geometry = new THREE.BoxGeometry();
     this.meshes = [];
-    for (let i = 0; i < 100; i++) {
-      let material = new THREE.MeshLambertMaterial({ color: 0xff0000 });
-      let mesh = new THREE.Mesh(this.geometry, material);
-      mesh.position.set(Math.cos(i / 4) * 2 + Math.sin(i / 15) * 5, -2, -i);
-      if (i < 100) {
-        mesh.position.x *= i / 100;
-      }
-      //mesh.material.color = new THREE.Color(Math.cos(i / 20), Math.sin(i / 20), Math.cos(i / 20) * Math.sin(i / 20));
-      mesh.material.color.setHSL(i / 50, 0.5, 0.5);
-      mesh.scale.set(5, 1, 1);
 
-      this.scene.add(mesh);
-      this.meshes.push(mesh);
-    }
-
+    this.worldgeneration = new StraightCurvy(this.scene, this.cScene);
 
     //light
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     this.scene.add(ambientLight);
 
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
-    directionalLight.position.set(10,20,0);
+    directionalLight.position.set(10, 20, 0);
     this.scene.add(directionalLight);
 
     //used for the rgb effect
@@ -60,62 +53,68 @@ export class Game {
     //creates a controlhandler which checks if a specific button is pressed
     this.controlhandler = new Controlhandler();
 
-    this.ball.setVelocity(undefined, undefined, -0.2);
+    // this.ball.setVelocity(undefined, undefined, -0.2);
 
     this.delta = 0;
-   // this.clock = new THREE.Clock();
+    //this.ball.cMesh.velocity.set(0, 0, -49);
+    //this.ball.cMesh.applyForce(new CANNON.Vec3(0, 0, -10022), new CANNON.Vec3(0, 0, 0));
+    let oldVel = this.ball.cMesh.velocity;
+    this.currentSpeed = -20;
+    this.ball.cMesh.velocity.set(oldVel.x, oldVel.y, oldVel.z + this.currentSpeed);
     this.render();
   }
   render() {
     requestAnimationFrame(() => {
-      
-      if(this.clock == undefined){
+      if (this.clock == undefined) {
         this.clock = new THREE.Clock();
+        this.worldGenerationClock = new THREE.Clock();
+        this.worldGenerationClock.start();
+      } else {
+        this.delta = this.clock.getDelta() / 9.81;
       }
-      else{
-      
-        this.delta = this.clock.getDelta() / 9.81 ;
-      }
-      //let delta = 1;
 
-      while(this.ball.mesh.position.z < this.meshes[this.meshes.length - 1].position.z + 200) {
-        let material = new THREE.MeshLambertMaterial({ color: 0xff0000 });
-        let mesh = new THREE.Mesh(this.geometry, material);
-        let i = -this.meshes[this.meshes.length - 1].position.z + 1;
-        mesh.position.set(Math.cos(i / 4) * 2 + Math.sin(i / 15) * 5, -2, -i);
-        mesh.material.color.setHSL(i / 50, 0.5, 0.5);
-        mesh.scale.set(5, 1, 1);
-        this.meshes.push(mesh);
-        this.scene.add(this.meshes[this.meshes.length - 1]);
+      if (this.worldGenerationClock.getElapsedTime() > 0.2) {
+        this.worldgeneration.generateAroundPosition(new THREE.Vector3(0, 0, this.ball.mesh.position.z), 100);
+        this.worldgeneration.deleteBehind(new THREE.Vector3(0, 0, this.ball.mesh.position.z + 40));
+        this.worldGenerationClock.start();
       }
+      //this.ball.cMesh.applyForce(new CANNON.Vec3(0, 0, this.delta * -5022), new CANNON.Vec3(0, 0, 0));
+      //let oldVel = this.ball.cMesh.velocity;
+      //this.ball.cMesh.velocity.set(oldVel.x, oldVel.y, -40);
 
       this.counter += this.delta;
-      // for (let i = 0; i < this.meshes.length; i++) {
-      //  let i1 = -this.meshes[i].position.z;
-      //  this.meshes[i].material.color.setHSL((i1 + this.counter * 200) / 100, 0.5, 0.5);
-      // }
 
+      let left = 0;
+      let right = 0;
+      if (this.controlhandler.isKeyPressed(65)) left = -850 * this.delta;
+      if (this.controlhandler.isKeyPressed(68)) right = 850 * this.delta;
+
+      let oldVel = this.ball.cMesh.velocity;
+      let newZ = oldVel.z;
+      //this.ball.cMesh.applyForce(new CANNON.Vec3(left + right, 0, 0), new CANNON.Vec3(0, 0, 0));
+
+      this.currentSpeed -= this.delta * 5;
+      if (oldVel.z > this.currentSpeed) {
+        newZ += this.currentSpeed / 10;
+      }
+      this.ball.cMesh.velocity.set(oldVel.x + left + right, oldVel.y, newZ);
+
+      this.worldgeneration.updatePhysics(new THREE.Vector3(0, 0, this.ball.mesh.position.z));
+      if (this.physicsClock == undefined) {
+        this.physicsClock = new THREE.Clock();
+      } else {
+        this.updatePhysics(this.physicsClock.getDelta());
+      }
       this.camera.position.set(0, 5, this.ball.mesh.position.z + 9);
       this.controls.target = this.ball.mesh.position;
       this.controls.update();
-
-      //manages the left and right movement
-      //65 is the "a" key
-      //68 is the "d" key
-      let left = 0;
-      let right = 0;
-      if (this.controlhandler.isKeyPressed(65)) left = -5;
-      if (this.controlhandler.isKeyPressed(68)) right = 5;
-      this.ball.controlHorizontally(left + right, this.delta);
-      this.ball.controlVertically(-0.15, this.delta);
-      this.ball.moveDown(this.delta);
-
-      if (this.ball.mesh.y < -100) {
-        this.initialize();
-      }
-
       this.renderer.render(this.scene, this.camera);
       this.render();
     });
+  }
+
+  updatePhysics(dt) {
+    this.cScene.step(1 / 60, dt, 10);
+    this.ball.updatePhysics();
   }
 }

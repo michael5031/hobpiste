@@ -12,6 +12,8 @@
     "last 1 Chrome version"
   ],
   "dependencies": {
+    "cannon": "^0.6.2",
+    "physijs": "^1.0.4",
     "three": "^0.130.0"
   }
 }
