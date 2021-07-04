@@ -1,11 +1,13 @@
 import * as THREE from "three";
 import * as CANNON from "cannon";
+import { Global } from "./global";
 
 export class Worldgeneration {
-  constructor(scene, cScene) {
+  constructor(scene, cScene, diff) {
     this.scene = scene;
     this.cScene = cScene;
     this.meshes = new Map();
+    this.difficulty = diff;
   }
   init(scene, cScene) {}
   generateAroundPosition(i, distance) {}
@@ -14,13 +16,24 @@ export class Worldgeneration {
 }
 
 export class StraightCurvy extends Worldgeneration {
-  constructor(scene, cScene) {
-    super(scene, cScene);
+  constructor(scene, cScene, diff) {
+    super(scene, cScene, diff);
     this.init();
   }
   init() {
     this.size = 2;
-    this.width = 10;
+    switch (this.difficulty) {
+      case Global.difficulty.easy:
+        this.width = 12;
+        break;
+      case Global.difficulty.normal:
+        this.width = 10;
+        break;
+      case Global.difficulty.hard:
+        this.width = 8;
+        break;
+    }
+
     this.boxGeometry = new THREE.BoxGeometry(this.width, 1, this.size);
     this.compound = { lastZ: undefined, compound: new CANNON.Body({ mass: 0 }) };
     this.cScene.addBody(this.compound.compound);
@@ -33,12 +46,24 @@ export class StraightCurvy extends Worldgeneration {
       let material = new THREE.MeshLambertMaterial();
       let mesh = new THREE.Mesh(this.boxGeometry, material);
       // mesh.position.set(Math.cos((pos.z - i) / 4) * 2 + Math.sin((pos.z - i) / 15) * 5, -2, pos.z - i);
-      mesh.position.set(Math.cos((pos.z - i) / 40) * 9 + Math.sin((pos.z - i) / 45) * 9, -5, pos.z - i);
+      switch (this.difficulty) {
+        case Global.difficulty.easy:
+          mesh.position.set(Math.cos((pos.z - i) / 40) * 9 + Math.sin((pos.z - i) / 45) * 9, -5, pos.z - i);
+          break;
+        case Global.difficulty.normal:
+          mesh.position.set(Math.cos((pos.z - i) / 35) * 10 + Math.sin((pos.z - i) / 35) * 10, -5, pos.z - i);
+          break;
+        case Global.difficulty.hard:
+          mesh.position.set(Math.cos((pos.z - i) / 30) * 12 + Math.sin((pos.z - i) / 12) * 12, -5, pos.z - i);
+          break;
+      }
+
       if (-(pos.z - i) < 100) {
         mesh.position.x *= -(pos.z - i) / 100;
       }
-      //mesh.material.color = new THREE.Color(Math.cos(i / 20), Math.sin(i / 20), Math.cos(i / 20) * Math.sin(i / 20));
-      mesh.material.color.setHSL(-(pos.z - i) / 50, 0.5, 0.5);
+      let t = pos.z - i;
+      //mesh.material.color = new THREE.Color(Math.cos(t / 10), Math.cos(t / 10), Math.cos(t / 10));
+      mesh.material.color.setHSL((-(pos.z - i) * 0.3) / 50, 0.6, 0.5);
 
       this.scene.add(mesh);
 
