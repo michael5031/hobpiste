@@ -5,6 +5,7 @@ import { Ball } from "./ball.js";
 import { Controlhandler } from "./controlhandler.js";
 import { Worldgeneration, StraightCurvy } from "./worldgeneration.js";
 import { Global } from "./global.js";
+import { EnvBlocks, Envgeneration } from "./envgeneration.js";
 export class Game {
   constructor() {
     this.initialize();
@@ -18,7 +19,7 @@ export class Game {
     this.scene = new THREE.Scene();
     //sets up cannonjs scene
     this.cScene = new CANNON.World();
-    this.cScene.gravity.set(0, -10, 0);
+    this.cScene.gravity.set(0, -20, 0);
     this.cScene.broadphase = new CANNON.NaiveBroadphase();
     this.cScene.solver.iterations = 40;
 
@@ -30,12 +31,13 @@ export class Game {
     this.cScene.defaultContactMaterial.friction = 0;
 
     //sets up basic camera
-    this.camera = new THREE.PerspectiveCamera(69, window.innerWidth / window.innerHeight, 0.1, 420);
+    this.camera = new THREE.PerspectiveCamera(69, window.innerWidth / window.innerHeight, 0.1, 800);
 
     //sets up webgl renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setClearColor(0x202020, 1); // sets the background color
+
     this.renderer.shadowMap.enabled = true; //enables shadows
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.getElementById("root").innerHTML = ""; //resets the div (needed if this.initialize() is called is that it doesnt just get appended but replaced)
@@ -51,7 +53,7 @@ export class Game {
     this.ball.addToScene(this.scene);
 
     this.worldgeneration = new StraightCurvy(this.scene, this.cScene, Global.difficulty.easy); //creates a worldgenerator
-
+    this.envgeneration = new EnvBlocks(this.scene, this.cScene);
     //ambient light which is everywhere
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     this.scene.add(ambientLight);
@@ -109,7 +111,10 @@ export class Game {
 
       if (this.worldGenerationClock.getElapsedTime() > 0.2) {
         //gets called ever 200 milliseconds
-        this.worldgeneration.generateAroundPosition(new THREE.Vector3(0, 0, this.ball.mesh.position.z), 1500); //loads new blocks
+        this.envgeneration.generateInFront(new THREE.Vector3(0, 0, this.ball.mesh.position.z), 20);
+        this.envgeneration.deleteBehind(new THREE.Vector3(0, 0, this.ball.mesh.position.z), 3);
+
+        this.worldgeneration.generateAroundPosition(new THREE.Vector3(0, 0, this.ball.mesh.position.z), 800); //loads new blocks
         this.worldgeneration.deleteBehind(new THREE.Vector3(0, 0, this.ball.mesh.position.z + 40)); //delets old blocks
         this.worldGenerationClock.start(); //starts clock again
       }
