@@ -21,7 +21,7 @@ export class StraightCurvy extends Worldgeneration {
     this.init();
   }
   init() {
-    this.size = 2;
+    this.size = 3;
     switch (this.difficulty) {
       case Global.difficulty.easy:
         this.width = 12;

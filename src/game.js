@@ -5,18 +5,24 @@ import { Ball } from "./ball.js";
 import { Controlhandler } from "./controlhandler.js";
 import { Worldgeneration, StraightCurvy } from "./worldgeneration.js";
 import { Global } from "./global.js";
-import { EnvBlocks, Envgeneration } from "./envgeneration.js";
+import { EnvBlocks, Envgeneration, EnvStars } from "./envgeneration.js";
+//import { Stats } from "three/examples/jsm/libs/stats.module.js";
 export class Game {
   constructor() {
     this.initialize();
   }
   initialize() {
+    //some settings
+    this.renderDistance = 1000000;
+    this.preloadedBlocks = 500;
+
     //3 different clocks for different delta times because why not
     this.clock = undefined;
     this.physicsClock = undefined;
     this.worldGenerationClock = undefined;
     //sets up threejs scene
     this.scene = new THREE.Scene();
+    this.scene.fog = new THREE.Fog(new THREE.Color(0, 0, 0), 100, 5000);
     //sets up cannonjs scene
     this.cScene = new CANNON.World();
     this.cScene.gravity.set(0, -20, 0);
@@ -31,7 +37,7 @@ export class Game {
     this.cScene.defaultContactMaterial.friction = 0;
 
     //sets up basic camera
-    this.camera = new THREE.PerspectiveCamera(69, window.innerWidth / window.innerHeight, 0.1, 800);
+    this.camera = new THREE.PerspectiveCamera(69, window.innerWidth / window.innerHeight, 0.1, this.renderDistance);
 
     //sets up webgl renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -54,6 +60,7 @@ export class Game {
 
     this.worldgeneration = new StraightCurvy(this.scene, this.cScene, Global.difficulty.easy); //creates a worldgenerator
     this.envgeneration = new EnvBlocks(this.scene, this.cScene);
+    //this.envgeneration = new EnvStars(this.scene, this.cScene);
     //ambient light which is everywhere
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     this.scene.add(ambientLight);
@@ -84,10 +91,17 @@ export class Game {
       false
     );
 
+    //creates stats which is basically the fps screen
+    // this.stats = new Stats();
+    // document.body.appendChild(this.stats.dom);
+
     this.render(); //starts game loop
   }
   render() {
     requestAnimationFrame(() => {
+      //updates fps screen
+      //this.stats.update();
+
       //checks if the clocks are undefined and if yes creates them
       if (this.clock == undefined) {
         this.clock = new THREE.Clock();
@@ -111,25 +125,25 @@ export class Game {
 
       if (this.worldGenerationClock.getElapsedTime() > 0.2) {
         //gets called ever 200 milliseconds
-        this.envgeneration.generateInFront(new THREE.Vector3(0, 0, this.ball.mesh.position.z), 20);
+        this.envgeneration.generateInFront(new THREE.Vector3(0, 0, this.ball.mesh.position.z), 5);
         this.envgeneration.deleteBehind(new THREE.Vector3(0, 0, this.ball.mesh.position.z), 3);
 
-        this.worldgeneration.generateAroundPosition(new THREE.Vector3(0, 0, this.ball.mesh.position.z), 800); //loads new blocks
-        this.worldgeneration.deleteBehind(new THREE.Vector3(0, 0, this.ball.mesh.position.z + 40)); //delets old blocks
+        this.worldgeneration.generateAroundPosition(new THREE.Vector3(0, 0, this.ball.mesh.position.z), this.preloadedBlocks); //loads new blocks
+        this.worldgeneration.deleteBehind(new THREE.Vector3(0, 0, this.ball.mesh.position.z + 200)); //delets old blocks
         this.worldGenerationClock.start(); //starts clock again
       }
       this.worldgeneration.updatePhysics(new THREE.Vector3(0, 0, this.ball.mesh.position.z)); //gets a few blocks around the ball and adds them to the cannon world for collisions
 
       let left = 0;
       let right = 0;
-      if (this.controlhandler.isKeyPressed(65) || this.controlhandler.isKeyPressed(37)) left = -1000 * this.delta; //sets left to -1000 if "a" or "left arrow" is pressed
-      if (this.controlhandler.isKeyPressed(68) || this.controlhandler.isKeyPressed(39)) right = 1000 * this.delta; //sets right to 1000 if "d" or "right arrow" is pressed
+      if (this.controlhandler.isKeyPressed(65) || this.controlhandler.isKeyPressed(37)) left = -1000 * this.delta * (1 + -this.ball.mesh.position.z / 13000); //sets left to -1000 if "a" or "left arrow" is pressed
+      if (this.controlhandler.isKeyPressed(68) || this.controlhandler.isKeyPressed(39)) right = 1000 * this.delta * (1 + -this.ball.mesh.position.z / 13000); //sets right to 1000 if "d" or "right arrow" is pressed
 
       let oldVel = this.ball.cMesh.velocity;
       let newZ = oldVel.z;
 
       //speeds up the ball if it hasnt the velocity of this.currentSpeed
-      this.currentSpeed -= this.delta * 5;
+      this.currentSpeed -= this.delta * 8;
       if (oldVel.z > this.currentSpeed) {
         newZ += this.currentSpeed / 8;
       }
@@ -147,7 +161,7 @@ export class Game {
         this.updatePhysics(this.physicsClock.getDelta()); //steps the cannon world
       }
       //updates camera position so that it follows the ball
-      this.camera.position.set(this.ball.mesh.position.x / 5, 3, this.ball.mesh.position.z + 9);
+      this.camera.position.set(this.ball.mesh.position.x / 3, 3, this.ball.mesh.position.z + 9);
       this.controls.target = new THREE.Vector3(this.ball.mesh.position.x, 0, this.ball.mesh.position.z);
       this.controls.update();
 
