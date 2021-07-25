@@ -1,1 +1,24 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Document</title><link rel="stylesheet" href="index.c6b0bed4.css"><script src="index.92777be0.js" type="module"></script></head><body> <h2 id="score">Score</h2> <h1 id="scoreText"></h1> <div id="root"></div> </body></html>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Hob Piste</title><link rel="stylesheet" href="index.c6b0bed4.css"></head><body> <h2 id="score">Score</h2> <h1 id="scoreText"></h1> <div id="root"></div> <script src="index.cb616f2c.js"></script> <script src="index.636f11d4.js"></script> <script type="vert" id="vertexshader">
+
+      varying vec2 vUv;
+
+      void main() {
+
+        vUv = uv;
+
+      	gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+
+      }
+    </script> <script type="frag" id="fragmentshader">
+
+      uniform sampler2D baseTexture;
+      uniform sampler2D bloomTexture;
+
+      varying vec2 vUv;
+
+      void main() {
+
+        gl_FragColor = ( texture2D( baseTexture, vUv ) + vec4( 1.0 ) * texture2D( bloomTexture, vUv ) );
+
+      }
+    </script> <script src="index.f98f8b66.js" type="module"></script> </body></html>
