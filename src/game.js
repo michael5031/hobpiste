@@ -7,22 +7,44 @@ import { Worldgeneration, StraightCurvy } from "./worldgeneration.js";
 import { Global } from "./global.js";
 import { EnvBlocks, Envgeneration, EnvStars } from "./envgeneration.js";
 //import { Stats } from "three/examples/jsm/libs/stats.module.js";
+//post processing
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+
 export class Game {
   constructor() {
     this.initialize();
+    this.darkenNonBloomed = this.darkenNonBloomed.bind(this);
+    this.restoreMaterial = this.restoreMaterial.bind(this);
   }
   initialize() {
     //some settings
     this.renderDistance = 1000000;
     this.preloadedBlocks = 500;
+    this.enableBloom = true;
+    window.backgroundColor = 0x030303;
+    this.bloomParams = {
+      exposure: 2,
+      bloomStrength: 2,
+      bloomThreshold: 0,
+      bloomRadius: 0,
+    };
+    window.enableInnerBlocks = false;
 
+    this.materials = {};
+    this.darkMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
     //3 different clocks for different delta times because why not
     this.clock = undefined;
     this.physicsClock = undefined;
     this.worldGenerationClock = undefined;
     //sets up threejs scene
     this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.Fog(new THREE.Color(0, 0, 0), 100, 5000);
+    //this.scene.fog = new THREE.Fog(new THREE.Color(0, 0, 0), 100, 5000);
+    //set up new layer for bloom
+    this.bloomLayer = new THREE.Layers();
+    this.bloomLayer.set(1); //1 is the layer for bloom 0 is default;
     //sets up cannonjs scene
     this.cScene = new CANNON.World();
     this.cScene.gravity.set(0, -20, 0);
@@ -42,7 +64,9 @@ export class Game {
     //sets up webgl renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setClearColor(0x202020, 1); // sets the background color
+    if (this.enableBloom == false) {
+      this.renderer.setClearColor(window.backgroundColor, 1); // sets the background color
+    }
 
     this.renderer.shadowMap.enabled = true; //enables shadows
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -59,8 +83,8 @@ export class Game {
     this.ball.addToScene(this.scene);
 
     this.worldgeneration = new StraightCurvy(this.scene, this.cScene, Global.difficulty.easy); //creates a worldgenerator
-    this.envgeneration = new EnvBlocks(this.scene, this.cScene);
-    //this.envgeneration = new EnvStars(this.scene, this.cScene);
+    //this.envgeneration = new EnvBlocks(this.scene, this.cScene);
+    this.envgeneration = new EnvStars(this.scene, this.cScene);
     //ambient light which is everywhere
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     this.scene.add(ambientLight);
@@ -70,6 +94,36 @@ export class Game {
     this.directionalLight.position.set(10, 20, 0);
     this.directionalLight.castShadow = true;
     this.scene.add(this.directionalLight);
+
+    if (this.enableBloom == true) {
+      //creates a renderpass for  post processing
+      this.renderScene = new RenderPass(this.scene, this.camera);
+
+      this.bloomPass = new UnrealBloomPass(new THREE.Vector3(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+      this.bloomPass.threshold = this.bloomParams.bloomThreshold;
+      this.bloomPass.strength = this.bloomParams.bloomStrength;
+      this.bloomPass.readius = this.bloomParams.bloomRadius;
+
+      this.bloomComposer = new EffectComposer(this.renderer);
+      this.bloomComposer.renderToScreen = false;
+      this.bloomComposer.addPass(this.renderScene);
+      this.bloomComposer.addPass(this.bloomPass);
+
+      this.finalPass = new ShaderPass(
+        new THREE.ShaderMaterial({
+          uniforms: { baseTexture: { value: null }, bloomTexture: { value: this.bloomComposer.renderTarget2.texture } },
+          vertexShader: document.getElementById("vertexshader").textContent,
+          fragmentShader: document.getElementById("fragmentshader").textContent,
+          defines: {},
+        }),
+        "baseTexture"
+      );
+      this.finalPass.needsSwap = true;
+
+      this.finalComposer = new EffectComposer(this.renderer);
+      this.finalComposer.addPass(this.renderScene);
+      this.finalComposer.addPass(this.finalPass);
+    }
 
     //creates a controlhandler which checks if a specific button is pressed
     this.controlhandler = new Controlhandler();
@@ -136,8 +190,8 @@ export class Game {
 
       let left = 0;
       let right = 0;
-      if (this.controlhandler.isKeyPressed(65) || this.controlhandler.isKeyPressed(37)) left = -1000 * this.delta * (1 + -this.ball.mesh.position.z / 13000); //sets left to -1000 if "a" or "left arrow" is pressed
-      if (this.controlhandler.isKeyPressed(68) || this.controlhandler.isKeyPressed(39)) right = 1000 * this.delta * (1 + -this.ball.mesh.position.z / 13000); //sets right to 1000 if "d" or "right arrow" is pressed
+      if (this.controlhandler.isKeyPressed(65) || this.controlhandler.isKeyPressed(37)) left = -1000 * this.delta * (1 + -this.ball.mesh.position.z / 11500); //sets left to -1000 if "a" or "left arrow" is pressed
+      if (this.controlhandler.isKeyPressed(68) || this.controlhandler.isKeyPressed(39)) right = 1000 * this.delta * (1 + -this.ball.mesh.position.z / 11500); //sets right to 1000 if "d" or "right arrow" is pressed
 
       let oldVel = this.ball.cMesh.velocity;
       let newZ = oldVel.z;
@@ -172,9 +226,32 @@ export class Game {
       this.directionalLight.position.set(this.ball.mesh.position.x + 3, this.ball.mesh.position.y + 6, this.ball.mesh.position.z);
       this.directionalLight.target = this.ball.mesh;
 
-      this.renderer.render(this.scene, this.camera); //renders threejs scene
+      if (this.enableBloom == true) {
+        this.scene.traverse(this.darkenNonBloomed);
+        this.renderer.setClearColor(0x00000000, 1); // sets the background color
+        this.bloomComposer.render();
+        this.scene.traverse(this.restoreMaterial);
+        this.renderer.setClearColor(window.backgroundColor, 1); // sets the background color
+        this.finalComposer.render();
+      } else {
+        this.renderer.render(this.scene, this.camera); //renders threejs scene
+      }
       this.render(); //recalls render for the next iteration of the game loop
     });
+  }
+
+  darkenNonBloomed(obj) {
+    if (obj.isMesh && this.bloomLayer.test(obj.layers) === false) {
+      this.materials[obj.uuid] = obj.material;
+      obj.material = this.darkMaterial;
+    }
+  }
+
+  restoreMaterial(obj) {
+    if (this.materials[obj.uuid]) {
+      obj.material = this.materials[obj.uuid];
+      delete this.materials[obj.uuid];
+    }
   }
 
   updatePhysics(dt) {
@@ -187,5 +264,9 @@ export class Game {
     this.camera.updateProjectionMatrix();
 
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+    if (this.enableBloom == true) {
+      this.bloomComposer.setSize(window.innerWidth, window.innerHeight);
+      this.finalComposer.setSize(window.innerWidth, window.innerHeight);
+    }
   }
 }

@@ -12,12 +12,11 @@ export class Ball {
     this.velocity = new THREE.Vector3(0, 0, 0);
 
     this.geometry = new THREE.SphereGeometry(1, 32, 32);
-    this.material = new THREE.MeshLambertMaterial({ color: 0xbbbbbb, wireframe: false });
+    this.material = new THREE.MeshLambertMaterial({ color: 0xffffff, wireframe: false });
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.mesh.name = "Ball";
     this.mesh.castShadow = true;
     this.mesh.receiveShadow = false;
-
     let shape = new CANNON.Sphere(1);
     //let shape = new CANNON.Box(new CANNON.Vec3(1 / 2, 1 / 2, 1 / 2));
     let mass = 5;

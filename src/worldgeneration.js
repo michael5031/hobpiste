@@ -21,7 +21,7 @@ export class StraightCurvy extends Worldgeneration {
     this.init();
   }
   init() {
-    this.size = 3;
+    this.size = 2;
     switch (this.difficulty) {
       case Global.difficulty.easy:
         this.width = 12;
@@ -34,7 +34,8 @@ export class StraightCurvy extends Worldgeneration {
         break;
     }
 
-    this.boxGeometry = new THREE.BoxGeometry(this.width, 1, this.size);
+    this.verticalSize = 1;
+    this.boxGeometry = new THREE.BoxGeometry(this.width, this.verticalSize, this.size);
     this.compound = { lastZ: undefined, compound: new CANNON.Body({ mass: 0 }) };
     this.cScene.addBody(this.compound.compound);
   }
@@ -43,43 +44,50 @@ export class StraightCurvy extends Worldgeneration {
     for (let i = 0; i < Math.floor(distance); i += this.size) {
       if (this.meshes.get(pos.z - i) != undefined) continue;
 
-      let material = new THREE.LineBasicMaterial({
-        linewidth: 1,
-        linecap: "round",
-        linejoin: "round",
+      let material = new THREE.MeshBasicMaterial({
+        wireframe: true,
       });
-      let materialInner = new THREE.MeshLambertMaterial({ color: 0x202020 });
-      let mesh = new THREE.Line(this.boxGeometry, material);
-      let mesh1 = new THREE.Mesh(this.boxGeometry, materialInner);
+      let materialInner = new THREE.MeshLambertMaterial({ color: window.backgroundColor });
+      let mesh = new THREE.Mesh(this.boxGeometry, material);
+      if (window.enableInnerBlocks == true) {
+        let mesh1 = new THREE.Mesh(this.boxGeometry, materialInner);
+        mesh1.receiveShadow = true;
+      }
       mesh.receiveShadow = true;
-      mesh1.receiveShadow = true;
+      mesh.layers.enable(1);
       // mesh.position.set(Math.cos((pos.z - i) / 4) * 2 + Math.sin((pos.z - i) / 15) * 5, -2, pos.z - i);
       switch (this.difficulty) {
         case Global.difficulty.easy:
-          mesh.position.set(Math.cos((pos.z - i) / 40) * 9 + Math.sin((pos.z - i) / 45) * 9, -5, pos.z - i);
+          mesh.position.set(Math.cos((pos.z - i) / 40) * 9 + Math.sin((pos.z - i) / 45) * 9, -4.5 - this.verticalSize / 2, pos.z - i);
           break;
         case Global.difficulty.normal:
-          mesh.position.set(Math.cos((pos.z - i) / 35) * 10 + Math.sin((pos.z - i) / 35) * 10, -5, pos.z - i);
+          mesh.position.set(Math.cos((pos.z - i) / 35) * 10 + Math.sin((pos.z - i) / 35) * 10, -4.5 - this.verticalSize / 2, pos.z - i);
           break;
         case Global.difficulty.hard:
-          mesh.position.set(Math.cos((pos.z - i) / 30) * 12 + Math.sin((pos.z - i) / 12) * 12, -5, pos.z - i);
+          mesh.position.set(Math.cos((pos.z - i) / 30) * 12 + Math.sin((pos.z - i) / 12) * 12, -4.5 - this.verticalSize / 2, pos.z - i);
           break;
       }
 
       if (-(pos.z - i) < 100) {
         mesh.position.x *= -(pos.z - i) / 100;
       }
-      mesh1.position.copy(mesh.position);
-      mesh1.scale.set(0.999, 0.999, 0.999);
+      if (window.enableInnerBlocks == true) {
+        mesh1.position.copy(mesh.position);
+        mesh1.scale.set(0.999, 0.999, 0.999);
+        this.scene.add(mesh1);
+      }
       let t = pos.z - i;
       //mesh.material.color = new THREE.Color(Math.cos(t / 10), Math.cos(t / 10), Math.cos(t / 10));
       mesh.material.color.setHSL((-(pos.z - i) * 0.3) / 50, 0.6, 0.5);
 
       this.scene.add(mesh);
-      this.scene.add(mesh1);
 
-      let shape = new CANNON.Box(new CANNON.Vec3(this.width / 2, 1 / 2, this.size / 1));
-      this.meshes.set(pos.z - i, { mesh: mesh, innerMesh: mesh1, cShape: shape });
+      let shape = new CANNON.Box(new CANNON.Vec3(this.width / 2, this.verticalSize / 2, this.size / 1));
+      if (window.enableInnerBlocks == true) {
+        this.meshes.set(pos.z - i, { mesh: mesh, innerMesh: mesh1, cShape: shape });
+      } else {
+        this.meshes.set(pos.z - i, { mesh: mesh, cShape: shape });
+      }
     }
   }
   deleteBehind(i1) {

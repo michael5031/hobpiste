@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import * as CANNON from "cannon";
+import { IntType } from "three";
 
 export class Envgeneration {
   constructor(scene, cScene) {
@@ -89,10 +90,10 @@ export class EnvBlocks extends Envgeneration {
 export class EnvStars extends Envgeneration {
   constructor(scene, cScene) {
     super(scene, cScene);
-    this.geometry = new THREE.BoxGeometry(1, 1, 1);
+    this.geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
     this.material = new THREE.MeshLambertMaterial({
       color: 0xffffff,
-      wireframe: false,
+      wireframe: true,
     });
   }
   generateAtPosition(i1) {
@@ -101,26 +102,38 @@ export class EnvStars extends Envgeneration {
       return;
     }
     let chunk = [];
-    let material = new THREE.MeshLambertMaterial({
-      color: 0xffffff,
-      wireframe: false,
-    });
+    this.width = 10;
+    let mesh = new THREE.InstancedMesh(this.geometry, this.material, 10000);
+    const matrix = new THREE.Matrix4();
+    let curID = 0;
     for (let y = 0; y < this.chunksSize; y++) {
       for (let i = 0; i < this.width; i++) {
         //console.log(getKindaRandom(i * pos.z * y));
-        if (getKindaRandom(i * pos.z * y) > 0.499 && getKindaRandom(i * pos.z * y) < 0.501) {
-          if (i > this.width / 2 - 100 && i < this.width / 2 + 100) {
-            // continue;
-          }
-          let mesh = new THREE.Mesh(this.geometry, material);
-          mesh.scale.set(Math.random(), 1, Math.random());
-          mesh.position.set((i - this.width / 2) * 100, -2, pos.z + y);
-          mesh.material.color.setHSL((pos.z + y) / 7000, 0.5, 0.5);
-          this.scene.add(mesh);
-          chunk.push({ mesh: mesh });
+        //if (getKindaRandom(i * pos.z * y) > 0.41 && getKindaRandom(i * pos.z * y) < 0.59) {
+        if (i > this.width / 2 - 100 && i < this.width / 2 + 100) {
+          //continue;
         }
+        //mesh.position.set((i - this.width / 2) * 100, -2, pos.z + y);
+        //mesh.material.color.setHSL((pos.z + y) / 7000, 0.5, 0.5);
+        let tempRandom = Math.random(i * y);
+        if (tempRandom == 0) {
+          tempRandom = 1;
+        }
+        let tempPosX = i - this.width / 2;
+        if (tempPosX == 0) {
+          tempPosX = 1;
+        }
+        matrix.setPosition(tempPosX * tempRandom * 1000, Math.random((i * y) / 2) * 900 - 550, pos.z + y);
+        mesh.setMatrixAt(curID, matrix);
+        let tempColor = new THREE.Color();
+        tempColor.setHSL((tempPosX * tempRandom) / 8, 0.5, 0.5);
+        mesh.setColorAt(curID, tempColor);
+        curID++;
+        //}
       }
     }
+    chunk.push({ mesh: mesh });
+    this.scene.add(mesh);
     this.chunks.set(pos.z, chunk);
   }
 

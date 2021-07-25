@@ -4,13 +4,41 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>Hob Piste</title>
     <link rel="stylesheet" href="./style.css" />
-    <script src="index.js" type="module"></script>
   </head>
   <body>
     <h2 id="score">Score</h2>
     <h1 id="scoreText"></h1>
     <div id="root"></div>
+    <script src="../node_modules/three/examples/jsm/WebGL.js"></script>
+    <script src="../node_modules/three/build/three.js"></script>
+    <script type="vert" id="vertexshader">
+
+      varying vec2 vUv;
+
+      void main() {
+
+        vUv = uv;
+
+      	gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+
+      }
+    </script>
+
+    <script type="frag" id="fragmentshader">
+
+      uniform sampler2D baseTexture;
+      uniform sampler2D bloomTexture;
+
+      varying vec2 vUv;
+
+      void main() {
+
+        gl_FragColor = ( texture2D( baseTexture, vUv ) + vec4( 1.0 ) * texture2D( bloomTexture, vUv ) );
+
+      }
+    </script>
+    <script src="index.js" type="module"></script>
   </body>
 </html>
