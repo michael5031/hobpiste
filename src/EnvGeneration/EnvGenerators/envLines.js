@@ -1,10 +1,10 @@
 import * as THREE from "three";
 import * as CANNON from "cannon";
 import { IntType } from "three";
-import { Envgeneration } from "../envgeneration";
+import { EnvGeneration } from "../envGeneration";
 
 
-export class EnvLines extends Envgeneration {
+export class EnvLines extends EnvGeneration {
   constructor(scene, cScene) {
     super(scene, cScene);
     this.geometry = new THREE.BoxGeometry(1, 300000, 1);

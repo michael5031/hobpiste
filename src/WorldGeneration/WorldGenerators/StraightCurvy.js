@@ -26,6 +26,7 @@ export class StraightCurvy extends WorldGeneration {
     this.boxGeometry = new THREE.BoxGeometry(this.width, this.verticalSize, this.size);
     this.compound = { lastZ: undefined, compound: new CANNON.Body({ mass: 0 }) };
     this.cScene.addBody(this.compound.compound);
+    this.materialInner = new THREE.MeshLambertMaterial({ color: window.backgroundColor });
   }
   generateAroundPosition(i1, distance) {
     let pos = new THREE.Vector3(Math.floor(i1.x / this.size) * this.size, Math.floor(i1.y / this.size) * this.size, Math.floor(i1.z / this.size) * this.size);
@@ -35,11 +36,10 @@ export class StraightCurvy extends WorldGeneration {
       let material = new THREE.MeshBasicMaterial({
         wireframe: true,
       });
-      let materialInner = new THREE.MeshLambertMaterial({ color: window.backgroundColor });
       let mesh = new THREE.Mesh(this.boxGeometry, material);
       let mesh1;
       if (window.enableInnerBlocks == true) {
-        mesh1 = new THREE.Mesh(this.boxGeometry, materialInner);
+       mesh1 = new THREE.Mesh(this.boxGeometry, this.materialInner);
       }
       mesh.layers.enable(1);
       // mesh.position.set(Math.cos((pos.z - i) / 4) * 2 + Math.sin((pos.z - i) / 15) * 5, -2, pos.z - i);

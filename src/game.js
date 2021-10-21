@@ -12,7 +12,7 @@ import { StraightCurvy } from "./WorldGeneration/WorldGenerators/StraightCurvy.j
 //background generation
 import { EnvStars } from "./EnvGeneration/EnvGenerators/envStars";
 import { EnvLines } from "./EnvGeneration/EnvGenerators/envLines";
-import { Envgeneration } from "./EnvGeneration/envgeneration";
+import { Envgeneration } from "./EnvGeneration/envGeneration";
 
 //import { Stats } from "three/examples/jsm/libs/stats.module.js";
 //post processing
@@ -20,6 +20,7 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import {FXAAShader} from "three/examples/jsm/shaders/FXAAShader.js";
 
 export class Game {
   constructor() {
@@ -30,7 +31,7 @@ export class Game {
   initialize() {
     //some settings
     this.renderDistance = 10000;
-    this.preloadedBlocks = 250;
+    this.preloadedBlocks = 400;
     this.enableBloom = true;
     window.backgroundColor = 0x030303;
     this.bloomParams = {
@@ -67,10 +68,10 @@ export class Game {
     this.cScene.defaultContactMaterial.friction = 0;
 
     //sets up basic camera
-    this.camera = new THREE.PerspectiveCamera(69, window.innerWidth / window.innerHeight, 0.1, this.renderDistance);
+    this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, this.renderDistance);
 
     //sets up webgl renderer
-    this.renderer = new THREE.WebGLRenderer({ antialias: true });
+    this.renderer = new THREE.WebGLRenderer();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     if (this.enableBloom == false) {
       this.renderer.setClearColor(window.backgroundColor, 1); // sets the background color
@@ -107,6 +108,12 @@ export class Game {
       //creates a renderpass for  post processing
       this.renderScene = new RenderPass(this.scene, this.camera);
 
+      this.fxaaPass = new ShaderPass( FXAAShader );
+      let container = document.getElementById("root");
+      let pixelRatio = this.renderer.getPixelRatio();
+      this.fxaaPass.material.uniforms[ 'resolution' ].value.x = 1 / ( container.offsetWidth * pixelRatio );
+      this.fxaaPass.material.uniforms[ 'resolution' ].value.y = 1 / ( container.offsetHeight * pixelRatio );
+
       this.bloomPass = new UnrealBloomPass(new THREE.Vector3(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
       this.bloomPass.threshold = this.bloomParams.bloomThreshold;
       this.bloomPass.strength = this.bloomParams.bloomStrength;
@@ -130,6 +137,7 @@ export class Game {
 
       this.finalComposer = new EffectComposer(this.renderer);
       this.finalComposer.addPass(this.renderScene);
+      this.finalComposer.addPass(this.fxaaPass);
       this.finalComposer.addPass(this.finalPass);
     }
 
@@ -161,6 +169,13 @@ export class Game {
   }
   render() {
     requestAnimationFrame(() => {
+      let worldGenerationUpdate = () => {
+        this.envgeneration.generateInFront(new THREE.Vector3(0, 0, this.ball.mesh.position.z), 5);
+        this.envgeneration.deleteBehind(new THREE.Vector3(0, 0, this.ball.mesh.position.z), 3);
+
+        this.worldgeneration.generateAroundPosition(new THREE.Vector3(0, 0, this.ball.mesh.position.z), this.preloadedBlocks); //loads new blocks
+        this.worldgeneration.deleteBehind(new THREE.Vector3(0, 0, this.ball.mesh.position.z + 200)); //delets old blocks
+      }
       //updates fps screen
       //this.stats.update();
 
@@ -169,6 +184,7 @@ export class Game {
         this.clock = new THREE.Clock();
         this.worldGenerationClock = new THREE.Clock();
         this.worldGenerationClock.start();
+        worldGenerationUpdate();
       } else {
         this.delta = this.clock.getDelta() / 10; //sets deltatime
       }
@@ -185,21 +201,19 @@ export class Game {
         return;
       }
 
-      if (this.worldGenerationClock.getElapsedTime() > 0.2) {
+      if (this.worldGenerationClock.getElapsedTime() > 0.6) {
         //gets called ever 200 milliseconds
-        this.envgeneration.generateInFront(new THREE.Vector3(0, 0, this.ball.mesh.position.z), 5);
-        this.envgeneration.deleteBehind(new THREE.Vector3(0, 0, this.ball.mesh.position.z), 3);
-
-        this.worldgeneration.generateAroundPosition(new THREE.Vector3(0, 0, this.ball.mesh.position.z), this.preloadedBlocks); //loads new blocks
-        this.worldgeneration.deleteBehind(new THREE.Vector3(0, 0, this.ball.mesh.position.z + 200)); //delets old blocks
+        worldGenerationUpdate();
         this.worldGenerationClock.start(); //starts clock again
       }
       this.worldgeneration.updatePhysics(new THREE.Vector3(0, 0, this.ball.mesh.position.z)); //gets a few blocks around the ball and adds them to the cannon world for collisions
 
       let left = 0;
       let right = 0;
-      if (this.controlhandler.isKeyPressed(65) || this.controlhandler.isKeyPressed(37)) left = -1000 * this.delta * (1 + -this.ball.mesh.position.z / 11500); //sets left to -1000 if "a" or "left arrow" is pressed
-      if (this.controlhandler.isKeyPressed(68) || this.controlhandler.isKeyPressed(39)) right = 1000 * this.delta * (1 + -this.ball.mesh.position.z / 11500); //sets right to 1000 if "d" or "right arrow" is pressed
+      // if (this.controlhandler.isKeyPressed(65) || this.controlhandler.isKeyPressed(37)) left = -1000 * this.delta * (1 + -this.ball.mesh.position.z / 11500); //sets left to -1000 if "a" or "left arrow" is pressed
+      // if (this.controlhandler.isKeyPressed(68) || this.controlhandler.isKeyPressed(39)) right = 1000 * this.delta * (1 + -this.ball.mesh.position.z / 11500); //sets right to 1000 if "d" or "right arrow" is pressed
+      if (this.controlhandler.isKeyPressed(65) || this.controlhandler.isKeyPressed(37)) left = -1000 * this.delta * (1 + -this.ball.mesh.position.z / 6500); //sets left to -1000 if "a" or "left arrow" is pressed
+      if (this.controlhandler.isKeyPressed(68) || this.controlhandler.isKeyPressed(39)) right = 1000 * this.delta * (1 + -this.ball.mesh.position.z / 6500); //sets right to 1000 if "d" or "right arrow" is pressed
 
       let oldVel = this.ball.cMesh.velocity;
       let newZ = oldVel.z;
@@ -233,6 +247,7 @@ export class Game {
       //changes light position, has to be done after physics so that it isnt behind the ball
       this.directionalLight.position.set(this.ball.mesh.position.x + 3, this.ball.mesh.position.y + 6, this.ball.mesh.position.z);
       this.directionalLight.target = this.ball.mesh;
+      
 
       if (this.enableBloom == true) {
         this.scene.traverse(this.darkenNonBloomed);

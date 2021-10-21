@@ -2,9 +2,9 @@ import * as THREE from "three";
 import * as CANNON from "cannon";
 import { IntType } from "three";
 
-import { Envgeneration } from "../envgeneration";
+import { EnvGeneration } from "../envGeneration";
 
-export class EnvStars extends Envgeneration {
+export class EnvStars extends EnvGeneration {
   constructor(scene, cScene) {
     super(scene, cScene);
     this.geometry = new THREE.SphereGeometry(0.1, 1, 1);

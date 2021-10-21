@@ -3,7 +3,7 @@ import * as THREE from "three";
 import * as CANNON from "cannon";
 import { IntType } from "three";
 
-export class Envgeneration {
+export class EnvGeneration {
   constructor(scene, cScene) {
     this.init();
     this.scene = scene;
