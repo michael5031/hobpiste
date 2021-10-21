@@ -3,9 +3,17 @@ import * as CANNON from "cannon";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { Ball } from "./ball.js";
 import { Controlhandler } from "./controlhandler.js";
-import { Worldgeneration, StraightCurvy } from "./worldgeneration.js";
 import { Global } from "./global.js";
-import { EnvBlocks, Envgeneration, EnvStars } from "./envgeneration.js";
+
+//actual game generation
+import {WorldGeneration} from "./WorldGeneration/worldgeneration";
+import { StraightCurvy } from "./WorldGeneration/WorldGenerators/StraightCurvy.js";
+
+//background generation
+import { EnvStars } from "./EnvGeneration/EnvGenerators/envStars";
+import { EnvLines } from "./EnvGeneration/EnvGenerators/envLines";
+import { Envgeneration } from "./EnvGeneration/envgeneration";
+
 //import { Stats } from "three/examples/jsm/libs/stats.module.js";
 //post processing
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
@@ -21,17 +29,17 @@ export class Game {
   }
   initialize() {
     //some settings
-    this.renderDistance = 1000000;
-    this.preloadedBlocks = 500;
+    this.renderDistance = 10000;
+    this.preloadedBlocks = 250;
     this.enableBloom = true;
     window.backgroundColor = 0x030303;
     this.bloomParams = {
       exposure: 2,
-      bloomStrength: 2,
+      bloomStrength: 1.8,
       bloomThreshold: 0,
       bloomRadius: 0,
     };
-    window.enableInnerBlocks = false;
+    window.enableInnerBlocks = true;
 
     this.materials = {};
     this.darkMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
@@ -82,8 +90,8 @@ export class Game {
     this.ball = new Ball(this.scene, this.cScene);
     this.ball.addToScene(this.scene);
 
-    this.worldgeneration = new StraightCurvy(this.scene, this.cScene, Global.difficulty.easy); //creates a worldgenerator
-    //this.envgeneration = new EnvBlocks(this.scene, this.cScene);
+    this.worldgeneration = new StraightCurvy(this.scene, this.cScene, Global.difficulty.normal, Math.random() * 100000); //creates a worldgenerator
+    //  this.envgeneration = new EnvLines(this.scene, this.cScene);
     this.envgeneration = new EnvStars(this.scene, this.cScene);
     //ambient light which is everywhere
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
